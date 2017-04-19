@@ -9,8 +9,8 @@ if (typeof jQuery === 'undefined') {
     'use strict';
 
     function MarshallForm($element, options) {
-        this.marshall = function ($element, options) {
-            var content = {};
+        this.marshall = function () {
+            var content = null;
             var $eleArray = [];
             var selector = "[name]:input";
             if (!options.serialFile) {
@@ -20,58 +20,27 @@ if (typeof jQuery === 'undefined') {
                 selector += ":enabled";
             }
             if (options.before($element)) {
+                content = {};
                 if ($element.is(selector)) {
                     $eleArray.push($element);
                 }
                 $eleArray.push($element.find(selector));
+                marshallValue($eleArray, options, content);
+            }
+            if (options.arrayJoin !== undefined && options.arrayJoin !== null) {
+                $.each(content, function (key, ele) {
+                    if ($.isArray(ele)) {
+                        content[key] = ele.join(options.arrayJoin);
+                    }
+                })
             }
             options.complete($element, content);
             return content;
         }
     }
 
-    /**
-     * 序列化值
-     * @param $eleArray jQuery对象数组
-     * @param options 设置选项
-     * @param content 序列化内容
-     */
-    function marshallValue($eleArray, options, content) {
-        $.each($eleArray, function (index, $ele) {
-            $ele.each(function (index, target) {
-                var $target = $(target);
-                if ($target.is(":radio")) {
-                    marshallRadio($target, options, content);
-                }
-            });
-        });
-    }
-
-    /**
-     * 序列化radio
-     * @param $target 要序列化的组件
-     * @param options 设置选项
-     * @param content 序列化内容
-     */
-    function marshallRadio($target, options, content) {
-        var key = $target.attr("name");
-        if (!Object.prototype.hasOwnProperty.call(content, key)) {
-            if (options.noMarshall !== MarshallForm.DEFAULT_OPTIONS.NO_MARSHALL) {
-                content[key] = options.noMarshall;
-            }
-        }
-        if ($target.is(":checked")) {
-            if (!options.preHandle($target)) {
-                delete content[key];
-                return;
-            }
-            content[key] = options.postHandle($target, $target.val());
-        }
-    }
 
     MarshallForm.DEFAULT_OPTIONS = {
-        NO_MARSHALL: {},
-
         /**
          * 是否序列化文件域
          * true:序列化, false:不序列化
@@ -90,22 +59,26 @@ if (typeof jQuery === 'undefined') {
         arrayJoin: undefined,
 
         /**
-         * 当组件未被序列化时(radio,checkbox,select未选中):
-         * 如果该值为内置的对象: 该组件不会加入到序列化的内容中,即不存在对应的键名,否则(即重新定义):序列化为该值
+         * 当组件未被序列化时(radio,checkbox未选中):
+         * {
+         *      "no": "不序列化该值,即序列化后的内容不存在该键",
+         *      "empty": "radio序列化为'',checkbox序列化为空数组[]",
+         *      其他值: "将用该值去代替"
+         * }
          */
-        noMarshall: this.NO_MARSHALL,
+        noMarshall: null,
 
         /**
          * 執行序列化前執行的回調行數
          * @param $element 綁定要序列化的組件($form.serializeForm(), 則$element為$form)
-         * @returns {boolean} true:執行後續序列化操作, false:不執行序列化,返回空对象{}
+         * @returns {boolean} true:執行後續序列化操作, false:不執行序列化,返回null
          */
         before: function ($element) {
             return true;
         },
 
         /**
-         * 每个元素序列化前的回调函数
+         * 每个元素序列化前的回调函数,序列化每一个input都会调用,不是通过name来区分的
          * @param $target 要序列化的元素
          * @returns {boolean} true:序列化该元素, false:不序列化该元素,不会调用postHandle()方法
          */
@@ -114,7 +87,7 @@ if (typeof jQuery === 'undefined') {
         },
 
         /**
-         * 每个元素序列化后执行的回调函数
+         * 每个元素序列化后执行的回调函数,序列化每一个input都会调用,不是通过name来区分的
          * @param $target 要序列化的元素
          * @param value 该元素序列化后的值
          * @returns {*} 返回的内容为序列化的最终值
@@ -130,12 +103,114 @@ if (typeof jQuery === 'undefined') {
          */
         complete: function ($element, content) {
         }
-
     };
 
-    $.fn.marshallForm = function (options) {
-        var options = $.extend({}, MarshallForm.DEFAULT_OPTIONS, options);
+    /**
+     * 序列化值
+     * @param $eleArray jQuery对象数组
+     * @param options 设置选项
+     * @param content 序列化内容
+     */
+    function marshallValue($eleArray, options, content) {
+        $.each($eleArray, function (index, $ele) {
+            $ele.each(function (index, target) {
+                var $target = $(target);
+                if ($target.is(":radio")) {
+                    marshallRadio($target, options, content);
+                } else if ($target.is(":checkbox")) {
+                    marshallCheckbox($target, options, content);
+                } else if ($target.is("select")) {
+                    marshallSelect($target, options, content);
+                } else {
+                    marshallText($target, options, content);
+                }
+            });
+        });
+    }
 
+    /**
+     * 序列化radio
+     * @param $target 要序列化的组件
+     * @param options 设置选项
+     * @param content 序列化内容
+     */
+    function marshallRadio($target, options, content) {
+        var key = $target.attr("name");
+        if (!Object.prototype.hasOwnProperty.call(content, key)) {
+            if (options.noMarshall === "empty") {
+                content[key] = "";
+            } else if (options.noMarshall !== "no") {
+                content[key] = options.noMarshall;
+            }
+        }
+        if ($target.is(":checked")) {
+            if (!options.preHandle($target)) {
+                return;
+            }
+            content[key] = options.postHandle($target, $target.val());
+        }
+    }
+
+    /**
+     * 序列化checkbox
+     * @param $target 要序列化的组件
+     * @param options 设置选项
+     * @param content 序列化内容
+     */
+    function marshallCheckbox($target, options, content) {
+        var key = $target.attr("name");
+        if (!Object.prototype.hasOwnProperty.call(content, key)) {
+            if (options.noMarshall === "empty") {
+                content[key] = [];
+            } else if (options.noMarshall !== "no") {
+                content[key] = options.noMarshall;
+            }
+        }
+        if ($target.is(":checked")) {
+            if (!options.preHandle($target)) {
+                return;
+            }
+            if (!$.isArray(content[key])) {
+                content[key] = [];
+            }
+            content[key].push(options.postHandle($target, $target.val()));
+        }
+    }
+
+    /**
+     * 序列化select
+     * @param $target 要序列化的组件
+     * @param options 设置选项
+     * @param content 序列化内容
+     */
+    function marshallSelect($target, options, content) {
+        var key = $target.attr("name");
+        content[key] = options.postHandle($target, $target.val());
+    }
+
+    /**
+     * 序列化text
+     * @param $target 要序列化的组件
+     * @param options 设置选项
+     * @param content 序列化内容
+     */
+    function marshallText($target, options, content) {
+        var key = $target.attr("name");
+        if (!Object.prototype.hasOwnProperty.call(content, key)) {
+            if (options.preHandle($target)) {
+                content[key] = options.postHandle($target, $target.val());
+            }
+            return;
+        }
+
+        if (!$.isArray(content[key])) {
+            content[key] = [].concat(content[key]);
+        }
+        content[key].push(options.postHandle($target, $target.val()))
+    }
+
+    $.fn.marshallForm = function (options) {
+        return new MarshallForm(this, $.extend({}, MarshallForm.DEFAULT_OPTIONS, options)).marshall();
     };
 
     /**
