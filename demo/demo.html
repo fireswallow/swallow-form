@@ -37,6 +37,7 @@
     </select>
 
     <button id="extract-button" type="button">Extract Value</button>
+    <button id="push-button" type="button">Push Value</button>
 
 </form>
 
@@ -44,12 +45,15 @@
 <script src="../dist/swallow-form.js"></script>
 <script>
     $(function () {
+
+        //{"a0":"123","a1":"123","a2":["123","234","345"],"a3":"","a4":"a41","a5":"a52","a6":["a61","a63"],"a7":["a72"],"s1":"sd","s2":["sb","se","sg"]}
         var $testForm = $("#test-form");
         $testForm.on("click", "#extract-button", function () {
-            var value1 = $testForm.marshallForm({
-                serialFile: false,
-                serialDisabled: false,
-                noMarshall: null,
+            var value1 = $testForm.unmarshalForm({
+                unmarshalFile: false,
+                unmarshalDisabled: true,
+                noUnmarshal: null,
+                arrayJoin: ",",
 
                 before: function ($element) {
                     return true;
@@ -68,6 +72,31 @@
                 }
             });
             console.log(value1)
+        });
+
+        $testForm.on("click", "#push-button", function () {
+            var data = JSON.parse(
+                '{"a0":"aa","a1":"ss","a2":"dd,ff,gg","a3":"vv","a4":"a41","a5":"a52","a6":"a61,a62,a63","a7":"a72","a9":"disabled","s1":"sc","s2":"sb,sf,sg,sh"}'
+            );
+            $testForm.marshalForm(data, {
+                separator: ",",
+                before: function ($element, data) {
+                    return true;
+                },
+
+                preHandle: function ($target, key, value) {
+                    console.log(key + "->" + value);
+                    return true;
+                },
+
+                postHandle: function ($target) {
+                    console.log($target.attr("name"));
+                },
+
+                complete: function ($element) {
+                    console.log("end");
+                }
+            });
         });
     });
 </script>
