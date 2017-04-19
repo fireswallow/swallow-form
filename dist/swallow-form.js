@@ -5,18 +5,23 @@ if (typeof jQuery === 'undefined') {
     throw new Error('该插件需要jQuery');
 }
 
+
+/**
+ * 将元素下的form表单序列化为对象
+ * 例:$(".form).unmarshalForm(), $(".div).unmarshalForm(), $("input").unmarshalForm()
+ */
 +(function ($) {
     'use strict';
 
-    function MarshallForm($element, options) {
-        this.marshall = function () {
+    function UnmarshalForm($element, options) {
+        this.unmarshal = function () {
             var content = null;
             var $eleArray = [];
             var selector = "[name]:input";
-            if (!options.serialFile) {
+            if (!options.unmarshalFile) {
                 selector += ":not(:file)";
             }
-            if (!options.serialDisabled) {
+            if (!options.unmarshalDisabled) {
                 selector += ":enabled";
             }
             if (options.before($element)) {
@@ -25,7 +30,7 @@ if (typeof jQuery === 'undefined') {
                     $eleArray.push($element);
                 }
                 $eleArray.push($element.find(selector));
-                marshallValue($eleArray, options, content);
+                unmarshalValue($eleArray, options, content);
             }
             if (options.arrayJoin !== undefined && options.arrayJoin !== null) {
                 $.each(content, function (key, ele) {
@@ -40,18 +45,18 @@ if (typeof jQuery === 'undefined') {
     }
 
 
-    MarshallForm.DEFAULT_OPTIONS = {
+    UnmarshalForm.DEFAULT_OPTIONS = {
         /**
          * 是否序列化文件域
          * true:序列化, false:不序列化
          */
-        serialFile: false,
+        unmarshalFile: false,
 
         /**
          * 是否序列化禁用表單
          * true:序列化, false:不序列化
          */
-        serialDisabled: false,
+        unmarshalDisabled: false,
 
         /**
          * 当该值不为undefined && null时,对于数组类型的值,用该连接符号连接起来,
@@ -66,7 +71,7 @@ if (typeof jQuery === 'undefined') {
          *      其他值: "将用该值去代替"
          * }
          */
-        noMarshall: null,
+        noUnmarshal: null,
 
         /**
          * 執行序列化前執行的回調行數
@@ -111,18 +116,18 @@ if (typeof jQuery === 'undefined') {
      * @param options 设置选项
      * @param content 序列化内容
      */
-    function marshallValue($eleArray, options, content) {
-        $.each($eleArray, function (index, $ele) {
-            $ele.each(function (index, target) {
+    function unmarshalValue($eleArray, options, content) {
+        $.each($eleArray, function (i, $ele) {
+            $ele.each(function (j, target) {
                 var $target = $(target);
                 if ($target.is(":radio")) {
-                    marshallRadio($target, options, content);
+                    unmarshalRadio($target, options, content);
                 } else if ($target.is(":checkbox")) {
-                    marshallCheckbox($target, options, content);
+                    unmarshalCheckbox($target, options, content);
                 } else if ($target.is("select")) {
-                    marshallSelect($target, options, content);
+                    unmarshalSelect($target, options, content);
                 } else {
-                    marshallText($target, options, content);
+                    unmarshalText($target, options, content);
                 }
             });
         });
@@ -134,13 +139,13 @@ if (typeof jQuery === 'undefined') {
      * @param options 设置选项
      * @param content 序列化内容
      */
-    function marshallRadio($target, options, content) {
+    function unmarshalRadio($target, options, content) {
         var key = $target.attr("name");
         if (!Object.prototype.hasOwnProperty.call(content, key)) {
-            if (options.noMarshall === "empty") {
+            if (options.noUnmarshal === "empty") {
                 content[key] = "";
-            } else if (options.noMarshall !== "no") {
-                content[key] = options.noMarshall;
+            } else if (options.noUnmarshal !== "no") {
+                content[key] = options.noUnmarshal;
             }
         }
         if ($target.is(":checked")) {
@@ -157,13 +162,13 @@ if (typeof jQuery === 'undefined') {
      * @param options 设置选项
      * @param content 序列化内容
      */
-    function marshallCheckbox($target, options, content) {
+    function unmarshalCheckbox($target, options, content) {
         var key = $target.attr("name");
         if (!Object.prototype.hasOwnProperty.call(content, key)) {
-            if (options.noMarshall === "empty") {
+            if (options.noUnmarshal === "empty") {
                 content[key] = [];
-            } else if (options.noMarshall !== "no") {
-                content[key] = options.noMarshall;
+            } else if (options.noUnmarshal !== "no") {
+                content[key] = options.noUnmarshal;
             }
         }
         if ($target.is(":checked")) {
@@ -183,7 +188,7 @@ if (typeof jQuery === 'undefined') {
      * @param options 设置选项
      * @param content 序列化内容
      */
-    function marshallSelect($target, options, content) {
+    function unmarshalSelect($target, options, content) {
         var key = $target.attr("name");
         content[key] = options.postHandle($target, $target.val());
     }
@@ -194,7 +199,7 @@ if (typeof jQuery === 'undefined') {
      * @param options 设置选项
      * @param content 序列化内容
      */
-    function marshallText($target, options, content) {
+    function unmarshalText($target, options, content) {
         var key = $target.attr("name");
         if (!Object.prototype.hasOwnProperty.call(content, key)) {
             if (options.preHandle($target)) {
@@ -209,16 +214,147 @@ if (typeof jQuery === 'undefined') {
         content[key].push(options.postHandle($target, $target.val()))
     }
 
-    $.fn.marshallForm = function (options) {
-        return new MarshallForm(this, $.extend({}, MarshallForm.DEFAULT_OPTIONS, options)).marshall();
+    $.fn.unmarshalForm = function (options) {
+        return (new UnmarshalForm(this, $.extend({}, UnmarshalForm.DEFAULT_OPTIONS, options))).unmarshal();
     };
 
     /**
      * 解决冲突
      */
-    var old = $.fn.marshallForm;
+    var old = $.fn.unmarshalForm;
     $.fn.noConflict = function () {
-        $.fn.marshallForm = old;
+        $.fn.unmarshalForm = old;
+        return this;
+    };
+})(jQuery);
+
+/**
+ * 将数据回显于form表单
+ */
++(function ($) {
+    'use strict';
+
+    function MarshalForm($element, options, data) {
+        this.marshal = function () {
+            var $eleArray = [];
+            if (options.before($element, data)) {
+                marshalValue($element, options, data);
+            }
+            options.complete($element);
+        }
+    }
+
+    MarshalForm.DEFAULT_OPTIONS = {
+
+        /**
+         * 如果不为undefined && null,对于checkbox,multiple select,如果对应的值不为数组, 用该分割符去分割
+         *
+         */
+        separator: null,
+
+        before: function ($element, data) {
+            return true;
+        },
+
+        preHandle: function ($target, key, value) {
+            return true;
+        },
+
+        postHandle: function ($target) {
+        },
+
+        complete: function ($element) {
+        }
+    };
+
+    function marshalValue($element, options, data) {
+        var selector = ":input[name]";
+        $.each(data, function (key, value) {
+            $element.find(":input[name='" + key + "']").each(function (index, ele) {
+                var $ele = $(ele);
+                if ($ele.is(":radio")) {
+                    marshalCheck($ele, options, key, value);
+                } else if ($ele.is(":checkbox")) {
+                    if (value !== undefined && value !== null) {
+                        if (options.separator !== undefined && options.separator !== null) {
+                            if (!$.isArray(value)) {
+                                value = value.split(options.separator);
+                            }
+                        }
+                    } else {
+                        var temp = value;
+                        value = [];
+                        value.push(temp);
+                    }
+                    value = [].concat(value);
+                    $.each(value, function (i, v) {
+                        marshalCheck($ele, options, key, v);
+                    })
+                } else if ($ele.is("select")) {
+                    marshalSelect($ele, options, key, value);
+                } else {
+                    if (value !== undefined && value !== null) {
+                        if (options.separator !== undefined && options.separator !== null) {
+                            if (!$.isArray(value)) {
+                                value = value.split(options.separator);
+                            }
+                        }
+                    } else {
+                        var temp = value;
+                        value = [];
+                        value.push(temp);
+                    }
+                    value = [].concat(value);
+                    unmarshalText($ele, options, key, value[index]);
+                }
+            });
+        });
+    }
+
+    function marshalCheck($target, options, key, value) {
+        if ($target.val() === value) {
+            if (options.preHandle($target, key, value)) {
+                $target.prop("checked", "checked");
+                options.postHandle($target);
+            }
+        }
+    }
+
+    function marshalSelect($target, options, key, value) {
+        if ($target.is("[multiple]")) {
+            if (options.separator !== undefined && options.separator !== null) {
+                if (!$.isArray(value)) {
+                    value = value.split(options.separator);
+                }
+            }
+        }
+
+        if (options.preHandle($target, key, value)) {
+            value = [].concat(value);
+            $.each(value, function (index, v) {
+                $target.find("option[value='" + v + "']").prop("selected", "selected");
+            });
+            options.postHandle($target);
+        }
+    }
+
+    function unmarshalText($target, options, key, value) {
+        if (options.preHandle($target, key, value)) {
+            $target.val(value);
+            options.postHandle($target);
+        }
+    }
+
+    $.fn.marshalForm = function (data, options) {
+        return (new MarshalForm(this, $.extend({}, MarshalForm.DEFAULT_OPTIONS, options), data)).marshal();
+    };
+
+    /**
+     * 解决冲突
+     */
+    var old = $.fn.marshalForm;
+    $.fn.noConflict = function () {
+        $.fn.marshalForm = old;
         return this;
     };
 })(jQuery);
