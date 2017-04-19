@@ -5,11 +5,71 @@
     <title>Demo Page</title>
 </head>
 <body>
-<form>
+<form id="test-form">
 
-    <select multiple>
-
+    A0:<input name="a0"><br>
+    A1:<input name="a1"><br>
+    A2:<input name="a2"><input name="a2"><input name="a2"><br>
+    A3:<input name="a3" type="password"><br>
+    A4:<input name="a4" type="radio" value="a41">A41 <input name="a4" value="a42" type="radio">A42<br>
+    A5:<input name="a5" type="radio" value="a51">A51 <input name="a5" value="a52" type="radio">A52<br>
+    A6:<input name="a6" type="checkbox" value="a61">A61
+    <input name="a6" value="a62" type="checkbox">A62
+    <input name="a6" value="a63" type="checkbox">A63<br>
+    A7:<input name="a7" type="checkbox" value="a71">A71 <input name="a7" value="a72" type="checkbox">A72<br>
+    A8:<input name="a8" type="file"><br>
+    A9:<input name="a9" type="text" value="disabled" disabled><br>
+    <select name="s1">
+        <option value="sa">sa</option>
+        <option value="sb">sb</option>
+        <option value="sc">sc</option>
+        <option value="sd">sd</option>
     </select>
+    <select name="s2" size="4" multiple="false">
+        <option value="sa">sa</option>
+        <option value="sb">sb</option>
+        <option value="sc">sc</option>
+        <option value="sd">sd</option>
+        <option value="se">se</option>
+        <option value="sf">sf</option>
+        <option value="sg">sg</option>
+        <option value="sh">sh</option>
+    </select>
+
+    <button id="extract-button" type="button">Extract Value</button>
+
 </form>
+
+<script src="../jquery/jquery-1.11.3.js"></script>
+<script src="../dist/swallow-form.js"></script>
+<script>
+    $(function () {
+        var $testForm = $("#test-form");
+        $testForm.on("click", "#extract-button", function () {
+            var value1 = $testForm.marshallForm({
+                serialFile: false,
+                serialDisabled: false,
+                noMarshall: null,
+
+                before: function ($element) {
+                    return true;
+                },
+
+                preHandle: function ($target) {
+                    return true;
+                },
+
+                postHandle: function ($target, value) {
+                    return value;
+                },
+
+                complete: function ($element, content) {
+                    console.log(JSON.stringify(content))
+                }
+            });
+            console.log(value1)
+        });
+    });
+</script>
 </body>
 </html>
