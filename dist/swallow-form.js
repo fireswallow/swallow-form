@@ -357,7 +357,8 @@ if (typeof jQuery === 'undefined') {
     }
 
     $.fn.marshalForm = function (data, options) {
-        return (new MarshalForm(this, $.extend({}, MarshalForm.DEFAULT_OPTIONS, options), data)).marshal();
+        (new MarshalForm(this, $.extend({}, MarshalForm.DEFAULT_OPTIONS, options), data)).marshal();
+        return this;
     };
 
     $.fn.marshalForm.Constructor = MarshalForm;
