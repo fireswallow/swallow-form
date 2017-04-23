@@ -50,10 +50,11 @@
         var $testForm = $("#test-form");
         $testForm.on("click", "#extract-button", function () {
             var value1 = $testForm.unmarshalForm({
-                unmarshalFile: false,
-                unmarshalDisabled: true,
+                unmarshalFile: true,
+                unmarshalDisabled: false,
                 noUnmarshal: null,
                 arrayJoin: ",",
+                emptyToNull: false,
 
                 before: function ($element) {
                     return true;

@@ -64,6 +64,11 @@ if (typeof jQuery === 'undefined') {
         arrayJoin: undefined,
 
         /**
+         * 是否将空字符串''转换为null,对输入值有效,对单选,复选,下拉无效
+         */
+        emptyToNull: true,
+
+        /**
          * 当组件未被序列化时(radio,checkbox未选中):
          * {
          *      "no": "不序列化该值,即序列化后的内容不存在该键",
@@ -201,9 +206,13 @@ if (typeof jQuery === 'undefined') {
      */
     function unmarshalText($target, options, content) {
         var key = $target.attr("name");
+        var value = $target.val();
+        if (options.emptyToNull && value === "") {
+            value = null;
+        }
         if (!Object.prototype.hasOwnProperty.call(content, key)) {
             if (options.preHandle($target)) {
-                content[key] = options.postHandle($target, $target.val());
+                content[key] = options.postHandle($target, value);
             }
             return;
         }
@@ -211,7 +220,7 @@ if (typeof jQuery === 'undefined') {
         if (!$.isArray(content[key])) {
             content[key] = [].concat(content[key]);
         }
-        content[key].push(options.postHandle($target, $target.val()))
+        content[key].push(options.postHandle($target, value))
     }
 
     $.fn.unmarshalForm = function (options) {
