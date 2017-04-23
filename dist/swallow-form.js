@@ -227,13 +227,12 @@ if (typeof jQuery === 'undefined') {
      * 解决冲突
      */
     var old = $.fn.unmarshalForm;
+    $.fn.unmarshalForm = function (options) {
+        return (new UnmarshalForm(this, $.extend({}, UnmarshalForm.DEFAULT_OPTIONS, options))).unmarshal();
+    };
     $.fn.noConflict = function () {
         $.fn.unmarshalForm = old;
         return this;
-    };
-
-    $.fn.unmarshalForm = function (options) {
-        return (new UnmarshalForm(this, $.extend({}, UnmarshalForm.DEFAULT_OPTIONS, options))).unmarshal();
     };
 
     $.fn.unmarshalForm.Constructor = UnmarshalForm;
@@ -361,13 +360,12 @@ if (typeof jQuery === 'undefined') {
      * 解决冲突
      */
     var old = $.fn.marshalForm;
-    $.fn.noConflict = function () {
-        $.fn.marshalForm = old;
-        return this;
-    };
-
     $.fn.marshalForm = function (data, options) {
         (new MarshalForm(this, $.extend({}, MarshalForm.DEFAULT_OPTIONS, options), data)).marshal();
+        return this;
+    };
+    $.fn.noConflict = function () {
+        $.fn.marshalForm = old;
         return this;
     };
 
