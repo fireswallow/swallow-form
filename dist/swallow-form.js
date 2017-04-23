@@ -227,6 +227,8 @@ if (typeof jQuery === 'undefined') {
         return (new UnmarshalForm(this, $.extend({}, UnmarshalForm.DEFAULT_OPTIONS, options))).unmarshal();
     };
 
+    $.fn.unmarshalForm.Constructor = UnmarshalForm;
+
     /**
      * 解决冲突
      */
@@ -357,6 +359,8 @@ if (typeof jQuery === 'undefined') {
     $.fn.marshalForm = function (data, options) {
         return (new MarshalForm(this, $.extend({}, MarshalForm.DEFAULT_OPTIONS, options), data)).marshal();
     };
+
+    $.fn.marshalForm.Constructor = MarshalForm;
 
     /**
      * 解决冲突
